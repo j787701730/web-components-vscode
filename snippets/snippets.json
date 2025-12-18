@@ -1,0 +1,61 @@
+{
+  "创建 Web Components 模板": {
+    "prefix": "js-webComponents",
+    "body": [
+      "{",
+      "  const template = document.createElement('template');",
+      "  template.innerHTML = /*html*/ `",
+      "    <style>",
+      "     :host {",
+      "       display: contents;",
+      "     }",
+      "     ::slotted(*) { }",
+      "    </style>",
+      "    <div></div>",
+      "    <slot></slot>",
+      "    <slot name=\"input\" ></slot>",
+      "  `;",
+      "",
+      "  class Component extends HTMLElement {",
+      "    constructor() {",
+      "      super();",
+      "      this._shadowRoot = this.attachShadow({ mode: 'open' });",
+      "    }",
+      "",
+      "    /** 声明需要监听的属性 */",
+      "    static get observedAttributes() {",
+      "      return [];",
+      "    }",
+      "",
+      "    /** 组件挂载到 DOM */",
+      "    connectedCallback() {",
+      "      this._shadowRoot.appendChild(template.content.cloneNode(true));",
+      "    }",
+      "",
+      "    /** 监听属性变化 */",
+      "    attributeChangedCallback(name, oldVal, newVal) {}",
+      "",
+      "    /** 组件从 DOM 移除 */",
+      "    disconnectedCallback() {}",
+      "  }",
+      "  customElements.define('${TM_FILENAME_BASE}', Component);",
+      "}",
+      ""
+    ],
+    "description": "创建 Web Component 模板"
+  },
+  "创建 DispatchEvent": {
+    "prefix": "js-dispatchEvent",
+    "body": [
+      "/* ! 添加 $1 自定义事件 */",
+      "const event = new CustomEvent('$1', {",
+      "  detail: {",
+      "    value: ${2:''}",
+      "  }",
+      "});",
+      "this.dispatchEvent(event);",
+      ""
+    ],
+    "description": "创建 DispatchEvent"
+  }
+}
