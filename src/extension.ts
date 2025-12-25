@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { getTagNameAtPosition, isIgnoredPath } from './utils';
+import { componentsTags, registerHtmlCompletionProvider } from './registerHtmlCompletionProvider';
+import { getTagNameAtPosition, isIgnoredPath, loadWorkspaceConfig, objectClear } from './utils';
 
 /**
  * js 文件路径缓存
@@ -14,6 +15,11 @@ const statusBarItemText = '$(code) web';
 // 激活插件时注册跳转提供者
 export function activate(context: vscode.ExtensionContext) {
   getAllWorkspaceFiles();
+  loadWorkspaceConfig().then((res) => {
+    objectClear(componentsTags);
+    Object.assign(componentsTags, res);
+  });
+  registerHtmlCompletionProvider(context);
 
   // ========== 1. 创建状态栏项 ==========
   statusBarItem = vscode.window.createStatusBarItem(
@@ -71,6 +77,10 @@ export function activate(context: vscode.ExtensionContext) {
       { location: vscode.ProgressLocation.Notification, title: '正在刷新数据缓存...' },
       async () => {
         componentFilesPathCache.clear();
+        await loadWorkspaceConfig().then((res) => {
+          objectClear(componentsTags);
+          Object.assign(componentsTags, res);
+        });
         // 模拟刷新逻辑
         await getAllWorkspaceFiles();
         statusBarItem.text = statusBarItemText;
@@ -210,7 +220,7 @@ export function activate(context: vscode.ExtensionContext) {
     hoverProvider,
     clickDisposable
   );
-  console.log('web components vscode 插件已激活');
+  // console.log('web components vscode 插件已激活');
 }
 
 /**
@@ -227,7 +237,7 @@ export async function getAllWorkspaceFiles(
   // 1. 检查是否有打开的工作区
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
-    vscode.window.showWarningMessage('未打开任何工作区！');
+    // vscode.window.showWarningMessage('未打开任何工作区！');
     return [];
   }
 

@@ -21,4 +21,14 @@
 2. Format Selection As HTML [Adrian Wilczyński]
 
 3. Inline HTML [pushqrdx]
+4. 在.vscode 中 settings.json 中添加配置 Emmet 语法提示
+
+```
+"emmet.includeLanguages": {
+  "javascript": "html"
+},
+"emmet.syntaxProfiles": {
+  "javascript": "html"
+},
+```
 

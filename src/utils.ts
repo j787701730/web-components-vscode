@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 /**
@@ -39,3 +41,49 @@ export const getTagNameAtPosition = (document: vscode.TextDocument, position: vs
 
   return null;
 };
+
+/** 判断数据是不是对象类型 */
+export const isObject = (data: any): boolean => {
+  return data && `${Object.prototype.toString.call(data)}`.includes('Object');
+};
+
+export const toObject = (data: any): object => {
+  return isObject(data) ? data : {};
+};
+
+export const objectClear = (data: any): void => {
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      delete data[key];
+    }
+  }
+};
+
+export const toArray = (data: any): Array<any> => (Array.isArray(data) ? data : []);
+
+/**
+ * 读取工作区配置文件
+ */
+export async function loadWorkspaceConfig(): Promise<object> {
+  // 获取当前工作区根目录（无工作区时返回 undefined）
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) {
+    // vscode.window.showInformationMessage('未检测到工作区，使用默认配置');
+    return {};
+  }
+
+  const workspaceRoot = workspaceFolders[0].uri.fsPath;
+  const configPath = path.join(workspaceRoot, 'components.d.json');
+
+  try {
+    // 检查配置文件是否存在
+    await vscode.workspace.fs.stat(vscode.Uri.file(configPath));
+    // 读取配置文件内容
+    const fileContent = fs.readFileSync(configPath, 'utf8');
+    const customConfig = toObject(JSON.parse(fileContent));
+    return customConfig;
+  } catch (error) {
+    //
+  }
+  return {};
+}

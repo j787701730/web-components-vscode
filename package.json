@@ -22,7 +22,9 @@
     "Snippets"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onLanguage:html",
+    "onLanguage:javascript"
   ],
   "main": "./dist/extension.js",
   "contributes": {
