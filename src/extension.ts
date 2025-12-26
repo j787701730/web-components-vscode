@@ -2,7 +2,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { componentsTags, registerHtmlCompletionProvider } from './registerHtmlCompletionProvider';
-import { getTagNameAtPosition, isIgnoredPath, loadWorkspaceConfig, objectClear } from './utils';
+import {
+  getAttributeNameAtPosition,
+  getTagNameAtPosition,
+  isIgnoredPath,
+  loadWorkspaceConfig,
+  objectClear,
+  toArray,
+  toObject,
+} from './utils';
 
 /**
  * js 文件路径缓存
@@ -88,6 +96,18 @@ export function activate(context: vscode.ExtensionContext) {
     );
   });
 
+  // ========== 1. 监听文件保存 ==========
+  const saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
+    const { fileName } = document;
+    /** 监听文件保存，并更新缓存 */
+    if (fileName.endsWith('components.d.json')) {
+      loadWorkspaceConfig().then((res) => {
+        objectClear(componentsTags);
+        Object.assign(componentsTags, res);
+      });
+    }
+  });
+
   // ========== 1. 监听文件新增 ==========
   const createListener = vscode.workspace.onDidCreateFiles((event) => {
     event.files.forEach((fileUri) => {
@@ -160,7 +180,74 @@ export function activate(context: vscode.ExtensionContext) {
 
         // 如果不是标签，返回空
         if (!tagName) {
+          try {
+            // 1. 获取光标位置的完整单词范围（基础）
+            const wordRange = document.getWordRangeAtPosition(position);
+            if (!wordRange) return;
+
+            // 2. 扩展范围：获取光标所在标签的整个属性区域（处理折行）
+            const res3 = getAttributeNameAtPosition(document, position);
+
+            if (res3.attrName && res3.tagName) {
+              // console.log(res3);
+
+              if (componentsTags[res3.tagName] && componentsTags[res3.tagName].attributes?.[res3.attrName]) {
+                // 3. 构建悬停提示内容（Markdown 格式）
+                const markdownContent = new vscode.MarkdownString();
+                markdownContent.supportHtml = true;
+                const item: any = toObject(componentsTags[res3.tagName].attributes[res3.attrName]);
+
+                markdownContent.appendMarkdown(`${res3.attrName}\n\n --- \n\n`);
+
+                if (item.description) {
+                  markdownContent.appendMarkdown(`* description: ${item.description}\n\n`);
+                }
+                if (item.type) {
+                  markdownContent.appendMarkdown(`* type: ${item.type}\n\n`);
+                }
+                if (item.values) {
+                  markdownContent.appendMarkdown(`* values: ${toArray(item.values).join(' | ')}\n\n`);
+                }
+
+                // 4. 返回悬停提示
+                return new vscode.Hover(markdownContent, wordRange);
+              }
+            }
+          } catch (error) {
+            // console.error('Hover 提示出错：', error);
+            // return;
+          }
+
           return null;
+        }
+
+        // console.log(componentsTags[tagName]);
+
+        if (componentsTags[tagName]) {
+          const { description, attributes } = componentsTags[tagName];
+          const md = new vscode.MarkdownString();
+          // 允许链接/命令跳转（必须开启）
+          md.isTrusted = true;
+          md.appendMarkdown(`${description}\n\n --- \n\n`);
+          const keys = Object.keys(attributes);
+          keys.forEach((attr, i) => {
+            const item = attributes[attr];
+            md.appendMarkdown(`${attr}\n\n`);
+            if (item.description) {
+              md.appendMarkdown(`* description: ${item.description}\n\n`);
+            }
+            if (item.type) {
+              md.appendMarkdown(`* type: ${item.type}\n\n`);
+            }
+            if (item.values) {
+              md.appendMarkdown(`* values: ${toArray(item.values).join(' | ')}\n\n`);
+            }
+            if (i < keys.length - 1) {
+              md.appendMarkdown(`---\n\n`);
+            }
+          });
+
+          return new vscode.Hover(md);
         }
 
         // 2. 构造 hover 显示的内容（支持 Markdown）
@@ -218,7 +305,8 @@ export function activate(context: vscode.ExtensionContext) {
     deleteListener,
     renameListener,
     hoverProvider,
-    clickDisposable
+    clickDisposable,
+    saveListener
   );
   // console.log('web components vscode 插件已激活');
 }

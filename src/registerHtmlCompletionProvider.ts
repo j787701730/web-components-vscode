@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { IComponentsTags } from './types';
-import { toArray } from './utils';
+import { getCharBeforeCursor, toArray } from './utils';
 
 export const componentsTags: IComponentsTags = {};
 
@@ -13,16 +13,28 @@ function getHtmlTagName(
 ): {
   tagName: string | null;
   range: { start: number; end: number } | null;
+  isEndTag: boolean;
 } {
   const docText = document.getText();
   const docOffset = document.offsetAt(position);
-  const res: any = { tagName: null, range: null };
+  const res: any = { tagName: null, range: null, isEndTag: false };
   // 1. 向前找标签开始符 `<`
   let startOffset = docOffset;
   while (startOffset > 0) {
     startOffset--;
     if (docText[startOffset] === '<') {
       break;
+    }
+
+    /** 标签内部 */
+    if (docText[startOffset] === '>') {
+      return res;
+    }
+
+    // 匹配 `/`，表示结束标签
+    if (docText[startOffset] === '/') {
+      res.isEndTag = true;
+      return res;
     }
   }
   if (docText[startOffset] !== '<') {
@@ -53,7 +65,7 @@ function getHtmlTagName(
 
   const isClosingTag = tagMatch[1] === '/';
   const tagName = tagMatch[2].toLowerCase(); // 统一转小写
-  res.tagName = isClosingTag ? `/${tagName}` : tagName;
+  res.tagName = isClosingTag ? null : tagName;
   res.range = { start: startOffset + 1, end: endOffset };
   return res;
 }
@@ -164,9 +176,14 @@ export function registerHtmlCompletionProvider(context: vscode.ExtensionContext)
         if (!editor) return;
 
         const res = getHtmlTagName(editor.document, position);
+
         const tagName = res.tagName;
 
-        console.log('tagName---', tagName);
+        if (res.isEndTag) {
+          return;
+        }
+
+        // console.log('tagName---', tagName);
         if (tagName) {
           const attributes = componentsTags?.[tagName]?.attributes;
 
@@ -218,15 +235,18 @@ export function registerHtmlCompletionProvider(context: vscode.ExtensionContext)
           const item = new vscode.CompletionItem(tag, vscode.CompletionItemKind.Text);
           item.detail = componentsTags?.[tag]?.description || '';
           item.documentation = new vscode.MarkdownString(componentsTags[tag]?.description);
-          item.insertText = new vscode.SnippetString(`<${tag}>$0</${tag}>`);
+          const txt = getCharBeforeCursor();
+          // console.log(getCharBeforeCursor());
+
+          item.insertText = new vscode.SnippetString(`${txt == '<' ? '' : '<'}${tag}>$0</${tag}>`);
           completionItems.push(item);
         });
 
         return completionItems;
       },
     },
-    '<'
-    // ' ',
+    '<',
+    ' '
     // '=',
     // '"',
     // "'" // 新增 " 和 ' 作为触发字符（属性值补全）
