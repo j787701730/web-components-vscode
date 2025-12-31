@@ -27,16 +27,22 @@
       "      return [];",
       "    }",
       "",
-      "    /** 组件挂载到 DOM */",
-      "    connectedCallback() {",
-      "      this.shadowRoot.appendChild(template.content.cloneNode(true));",
-      "    }",
-      "",
       "    /** 监听属性变化 */",
       "    attributeChangedCallback(name, oldVal, newVal) {}",
       "",
+      "    /** 组件挂载到 DOM */",
+      "    connectedCallback() {",
+      "      // 标记是否已初始化，避免重复执行",
+      "      if (this._initialized) return;",
+      "      this._initialized = true;",
+      "      this.shadowRoot.appendChild(template.content.cloneNode(true));",
+      "    }",
+      "",
       "    /** 组件从 DOM 移除 */",
-      "    disconnectedCallback() {}",
+      "    disconnectedCallback() {",
+      "      this._initialized = false; // 若组件重新挂载需重新初始化",
+      "      this.shadowRoot.innerHTML = ''",
+      "    }",
       "  }",
       "  customElements.define('${TM_FILENAME_BASE}', Component);",
       "}",
@@ -57,5 +63,28 @@
       ""
     ],
     "description": "创建 DispatchEvent"
+  },
+  "创建 AbortController": {
+    "prefix": "js-abortController",
+    "body": ["this.controller = new AbortController();"],
+    "description": "创建 AbortController"
+  },
+  "abort AbortController": {
+    "prefix": "js-abortController",
+    "body": ["this.controller?.abort();"],
+    "description": "创建 AbortController"
+  },
+  "创建 addEventListener signal": {
+    "prefix": "js-addEventListener",
+    "body": [
+      "$1.addEventListener(",
+      "  '$2',",
+      "  (e) => {",
+      "    $3",
+      "  }, ",
+      "  { signal: this.controller.signal }, ",
+      ");"
+    ],
+    "description": "创建 addEventListener signal"
   }
 }
