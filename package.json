@@ -2,7 +2,7 @@
   "name": "web-components-vscode",
   "displayName": "web components vscode",
   "description": "自定义组件跳转及显示注释内容",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "icon": "dist/icon.png",
   "publisher": "ZhengWei513",
   "author": {

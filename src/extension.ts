@@ -228,7 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
           const md = new vscode.MarkdownString();
           // 允许链接/命令跳转（必须开启）
           md.isTrusted = true;
-          md.appendMarkdown(`${description}\n\n --- \n\n`);
+          md.appendMarkdown(`${description || tagName}\n\n --- \n\n`);
           const keys = Object.keys(attributes);
           keys.forEach((attr, i) => {
             const item = attributes[attr];
@@ -320,7 +320,7 @@ export function activate(context: vscode.ExtensionContext) {
 export async function getAllWorkspaceFiles(
   /** 限定 ts,js */
   include: string = '**/*.{ts,js}',
-  exclude: string = '**/node_modules/**|**/.git/**|**/dist/**'
+  exclude: string = '{**/node_modules/**,**/.git/**,**/dist/**}'
 ): Promise<string[]> {
   // 1. 检查是否有打开的工作区
   const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -334,7 +334,7 @@ export async function getAllWorkspaceFiles(
 
   fileUris.forEach((uri) => {
     // 更新缓存
-    componentFilesPathCache.add(uri.fsPath);
+    componentFilesPathCache.add(uri.fsPath.replace(/\\/g, '/').replace(/\/\/+/g, '/'));
   });
   return [];
 }
@@ -375,7 +375,7 @@ class HtmlTagDefinitionProvider implements vscode.DefinitionProvider {
 
   // 自定义：根据标签名定位目标文件
   getTargetFilePath(tagName: string): string | null {
-    const targetFile = [...componentFilesPathCache].find((el) => el.endsWith(`${tagName}.js`)) || null;
+    const targetFile = [...componentFilesPathCache].find((el) => el.endsWith(`/${tagName}.js`)) || null;
     return targetFile;
   }
 }

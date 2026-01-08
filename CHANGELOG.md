@@ -1,10 +1,8 @@
 # Change Log
 
-All notable changes to the "web-components-vscode" extension will be documented in this file.
+## [0.1.1]
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+- 修复排除文件夹错误
+- 缓存文件路径统一成斜杆 /
+- 文件跳转优化加斜杆 endsWith(`/${tagName}.js`)
 
