@@ -14,7 +14,7 @@
 
 2. js-dispatchEvent 创建 dispatchEvent 模板
 
-## components.d.json 自定义组件配置文件用于代码补全和提示
+## components.d.json 自定义组件配置文件用于代码补全和提示, 组件名称支持多个用逗号分隔, attributes 会合并, description 会覆盖
 
 ```js
 // components.d.json 类型定义

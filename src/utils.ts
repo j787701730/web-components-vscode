@@ -80,8 +80,27 @@ export async function loadWorkspaceConfig(): Promise<object> {
     await vscode.workspace.fs.stat(vscode.Uri.file(configPath));
     // 读取配置文件内容
     const fileContent = fs.readFileSync(configPath, 'utf8');
-    const customConfig = toObject(JSON.parse(fileContent));
-    return customConfig;
+    const customConfig: Record<string, any> = toObject(JSON.parse(fileContent));
+    const obj: any = {};
+    for (const [key, value] of Object.entries(customConfig)) {
+      const keys = key
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item);
+      for (const key of keys) {
+        if (obj[key]) {
+          if (value?.description) {
+            obj[key].description = value?.description;
+          }
+
+          Object.assign(obj[key].attributes, value?.attributes);
+        } else {
+          obj[key] = value;
+        }
+      }
+    }
+
+    return obj;
   } catch (error) {
     //
   }
