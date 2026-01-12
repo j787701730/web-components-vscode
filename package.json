@@ -3,7 +3,7 @@
   "displayName": "web components vscode",
   "description": "自定义组件跳转及显示注释内容",
   "version": "0.1.2",
-  "icon": "dist/icon.png",
+  "icon": "images/icon.png",
   "publisher": "ZhengWei513",
   "author": {
     "name": "ZhengWei513"
