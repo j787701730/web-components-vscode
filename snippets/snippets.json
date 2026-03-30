@@ -2,7 +2,7 @@
   "创建 Web Components 模板": {
     "prefix": "js-webComponents",
     "body": [
-      "{",
+      "if (!customElements.get('${TM_FILENAME_BASE}')) {",
       "  const template = document.createElement('template');",
       "  template.innerHTML = /*html*/ `",
       "    <style>",
@@ -16,39 +16,73 @@
       "    </div>",
       "  `;",
       "",
-      "  class Component extends HTMLElement {",
-      "    constructor() {",
-      "      super();",
-      "      this.attachShadow({ mode: 'open' });",
-      "    }",
+      "  customElements.define(",
+      "    '${TM_FILENAME_BASE}',",
+      "    class extends HTMLElement {",
+      "      constructor() {",
+      "        super();",
+      "      }",
       "",
-      "    /** 声明需要监听的属性 */",
-      "    static get observedAttributes() {",
-      "      return [];",
-      "    }",
+      "      /** 组件挂载到 DOM */",
+      "      connectedCallback() {",
+      "        const shadowRoot = this.attachShadow({ mode: 'open' });",
+      "        shadowRoot.appendChild(template.content.cloneNode(true));",
+      "      }",
       "",
-      "    /** 监听属性变化 */",
-      "    attributeChangedCallback(name, oldVal, newVal) {}",
+      "      /** 声明需要监听的属性 */",
+      "      static get observedAttributes() {",
+      "        return [];",
+      "      }",
       "",
-      "    /** 组件挂载到 DOM */",
-      "    connectedCallback() {",
-      "      // 标记是否已初始化，避免重复执行",
-      "      if (this._initialized) return;",
-      "      this._initialized = true;",
-      "      this.shadowRoot.appendChild(template.content.cloneNode(true));",
-      "    }",
+      "      /** 监听属性变化 */",
+      "      attributeChangedCallback(name, oldVal, newVal) {}",
       "",
-      "    /** 组件从 DOM 移除 */",
-      "    disconnectedCallback() {",
-      "      this._initialized = false; // 若组件重新挂载需重新初始化",
-      "      this.shadowRoot.innerHTML = ''",
-      "    }",
-      "  }",
-      "  customElements.define('${TM_FILENAME_BASE}', Component);",
+      "      /** 组件从 DOM 移除 */",
+      "      disconnectedCallback() {",
+      "        this.shadowRoot.innerHTML = '';",
+      "      }",
+      "    },",
+      "  );",
       "}",
       ""
     ],
     "description": "创建 Web Component 模板"
+  },
+  "创建 Web Components Lite 模板": {
+    "prefix": "js-webComponents-lite",
+    "body": [
+      "if (!customElements.get('${TM_FILENAME_BASE}')) {",
+      "  customElements.define(",
+      "    '${TM_FILENAME_BASE}',",
+      "    class extends HTMLElement {",
+      "      constructor() {",
+      "        super();",
+      "      }",
+      "",
+      "      /** 组件挂载到 DOM */",
+      "      connectedCallback() {",
+      "        const shadowRoot = this.attachShadow({ mode: 'open' });",
+      "        shadowRoot.innerHTML = '';",
+      "      }",
+      "",
+      "      /** 声明需要监听的属性 */",
+      "      static get observedAttributes() {",
+      "        return [];",
+      "      }",
+      "",
+      "      /** 监听属性变化 */",
+      "      attributeChangedCallback(name, oldVal, newVal) {}",
+      "",
+      "      /** 组件从 DOM 移除 */",
+      "      disconnectedCallback() {",
+      "        this.shadowRoot.innerHTML = '';",
+      "      }",
+      "    },",
+      "  );",
+      "}",
+      ""
+    ],
+    "description": "创建 Web Component Lite 模板"
   },
   "创建 DispatchEvent": {
     "prefix": "js-dispatchEvent",
@@ -69,10 +103,10 @@
     "body": ["this.controller = new AbortController();"],
     "description": "创建 AbortController"
   },
-  "abort AbortController": {
-    "prefix": "js-abortController",
+  "创建 abort AbortController": {
+    "prefix": "js-abortController-abort",
     "body": ["this.controller?.abort();"],
-    "description": "创建 AbortController"
+    "description": "创建 abort AbortController"
   },
   "创建 addEventListener signal": {
     "prefix": "js-addEventListener",
@@ -86,5 +120,25 @@
       ");"
     ],
     "description": "创建 addEventListener signal"
+  },
+  "创建 slot 节点发生变化事件": {
+    "prefix": "js-slotchange",
+    "body": ["$1.addEventListener(", "  'slotchange',", "  (e) => {", "    $2", "  }, ", ");"],
+    "description": "创建 slot 节点发生变化事件"
+  },
+  "获取 slot 节点(包含元素、文本)": {
+    "prefix": "js-assignedNodes",
+    "body": ["$1.assignedNodes({ flatten: true });"],
+    "description": "获取 slot 节点(包含元素、文本)"
+  },
+  "获取 slot 所有元素(过滤文本节点)": {
+    "prefix": "js-assignedElements",
+    "body": ["$1.assignedElements({ flatten: true });"],
+    "description": "获取 slot 所有元素(过滤文本节点)"
+  },
+  "判断 slot 是否为空": {
+    "prefix": "js-assignedNodes-empty",
+    "body": ["$1.assignedNodes({ flatten: true }).length === 0"],
+    "description": "判断 slot 是否为空"
   }
 }

@@ -60,6 +60,21 @@ export type IComponentsTags = {
 
 ![效果](./images/e3.png)
 
+## 语法插件
+
+| prefix                   | 内容                             |
+| ------------------------ | -------------------------------- |
+| js-webComponents         | 创建 Web Components 模板         |
+| js-webComponents-lite    | 创建 Web Components 精简模板     |
+| js-dispatchEvent         | 创建 DispatchEvent               |
+| js-abortController       | 创建 AbortController             |
+| js-abortController-abort | 创建 abort AbortController       |
+| js-addEventListener      | 创建 addEventListener signal     |
+| js-slotchange            | 创建 slot 节点发生变化事件       |
+| js-assignedNodes         | 获取 slot 节点(包含元素、文本)   |
+| js-assignedElements      | 获取 slot 所有元素(过滤文本节点) |
+| js-assignedNodes-empty   | 判断 slot 是否为空               |
+
 ### 推荐插件 Web Components js 中显示更好看
 
 1. es6-string-html [Tobermory]
