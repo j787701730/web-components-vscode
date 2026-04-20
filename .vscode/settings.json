@@ -19,6 +19,6 @@
     // 移除未使用的代码
     // "source.removeUnused": "explicit",
   },
-  "cSpell.words": ["pushqrdx", "Tobermory", "Wilczyński"]
+  "cSpell.words": ["pushqrdx", "Tobermory", "Wilczyński"],
+  "js/ts.tsdk.path": "node_modules\\typescript\\lib"
 }
-

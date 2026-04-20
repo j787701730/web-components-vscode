@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
   // ========== 1. 创建状态栏项 ==========
   statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left, // 位置：右侧（Left 为左侧）
-    0 // 优先级（数值越大越靠右/左）
+    0, // 优先级（数值越大越靠右/左）
   );
 
   // ========== 2. 配置状态栏样式和内容 ==========
@@ -43,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
 ---
 - [$(refresh)刷新缓存](command:web-components-vscode.refreshCache)
     `,
-    true
+    true,
   );
 
   tooltip.isTrusted = true;
@@ -92,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
         // 模拟刷新逻辑
         await getAllWorkspaceFiles();
         statusBarItem.text = statusBarItemText;
-      }
+      },
     );
   });
 
@@ -162,7 +162,7 @@ export function activate(context: vscode.ExtensionContext) {
       { scheme: 'file', language: 'html' },
       { scheme: 'file', language: 'javascript' },
     ],
-    new HtmlTagDefinitionProvider()
+    new HtmlTagDefinitionProvider(),
   );
 
   // ========== 1. 注册 Hover 提供者 ==========
@@ -294,7 +294,7 @@ export function activate(context: vscode.ExtensionContext) {
           }
         }
       },
-    }
+    },
   );
 
   context.subscriptions.push(
@@ -306,7 +306,7 @@ export function activate(context: vscode.ExtensionContext) {
     renameListener,
     hoverProvider,
     clickDisposable,
-    saveListener
+    saveListener,
   );
   // console.log('web components vscode 插件已激活');
 }
@@ -320,7 +320,7 @@ export function activate(context: vscode.ExtensionContext) {
 export async function getAllWorkspaceFiles(
   /** 限定 ts,js */
   include: string = '**/*.{ts,js}',
-  exclude: string = '{**/node_modules/**,**/.git/**,**/dist/**}'
+  exclude: string = '{**/node_modules/**,**/.git/**,**/dist/**}',
 ): Promise<string[]> {
   // 1. 检查是否有打开的工作区
   const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -345,7 +345,7 @@ class HtmlTagDefinitionProvider implements vscode.DefinitionProvider {
   async provideDefinition(
     document: vscode.TextDocument,
     position: vscode.Position,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
   ): Promise<vscode.Location[] | vscode.LocationLink[] | undefined> {
     try {
       // 1. 获取光标位置的 HTML 标签名
@@ -375,10 +375,12 @@ class HtmlTagDefinitionProvider implements vscode.DefinitionProvider {
 
   // 自定义：根据标签名定位目标文件
   getTargetFilePath(tagName: string): string | null {
-    const targetFile = [...componentFilesPathCache].find((el) => el.endsWith(`/${tagName}.js`)) || null;
+    const targetFile =
+      // ! 匹配规则：文件路径以 标签名.js 或 标签名/index.js 结尾
+      [...componentFilesPathCache].find((el) => el.endsWith(`/${tagName}.js`) || el.endsWith(`/${tagName}/index.js`)) ||
+      null;
     return targetFile;
   }
 }
 
 export function deactivate() {}
-
