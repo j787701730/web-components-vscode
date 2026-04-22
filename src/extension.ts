@@ -17,6 +17,11 @@ import {
  */
 const componentFilesPathCache = new Set<string>();
 
+const filePathFormat = (filePath: string) => {
+  // 1. 统一路径分隔符（兼容 Windows \ 和 Linux/Mac /）
+  return filePath.replace(/\\/g, '/');
+};
+
 let statusBarItem: vscode.StatusBarItem;
 const statusBarItemText = '$(code) web';
 
@@ -106,6 +111,11 @@ export function activate(context: vscode.ExtensionContext) {
         Object.assign(componentsTags, res);
       });
     }
+    const fullPath = document.uri.fsPath;
+    // 保存也更新下路劲
+    if (['.js'].includes(path.extname(fullPath))) {
+      componentFilesPathCache.add(filePathFormat(fullPath));
+    }
   });
 
   // ========== 1. 监听文件新增 ==========
@@ -118,7 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
       // 过滤需要关注的文件（如 html/vue 组件）
       if (['.js'].includes(path.extname(filePath))) {
-        componentFilesPathCache.add(filePath);
+        componentFilesPathCache.add(filePathFormat(filePath));
       }
     });
   });
@@ -132,7 +142,7 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
       if (['.js'].includes(path.extname(filePath))) {
-        componentFilesPathCache.delete(filePath);
+        componentFilesPathCache.delete(filePathFormat(filePath));
       }
     });
   });
@@ -149,8 +159,8 @@ export function activate(context: vscode.ExtensionContext) {
 
       // 处理组件重命名
       if (['.js'].includes(path.extname(oldPath)) || ['.js'].includes(path.extname(newPath))) {
-        componentFilesPathCache.delete(oldPath);
-        componentFilesPathCache.add(newPath);
+        componentFilesPathCache.delete(filePathFormat(oldPath));
+        componentFilesPathCache.add(filePathFormat(newPath));
       }
     });
   });
@@ -251,7 +261,10 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         // 2. 构造 hover 显示的内容（支持 Markdown）
-        const targetFile = [...componentFilesPathCache].find((el) => el.endsWith(`${tagName}.js`)) || null;
+        const targetFile =
+          [...componentFilesPathCache].find(
+            (el) => el.endsWith(`${tagName}.js`) || el.endsWith(`/${tagName}/index.js`),
+          ) || null;
 
         if (targetFile) {
           try {
@@ -334,7 +347,7 @@ export async function getAllWorkspaceFiles(
 
   fileUris.forEach((uri) => {
     // 更新缓存
-    componentFilesPathCache.add(uri.fsPath.replace(/\\/g, '/').replace(/\/\/+/g, '/'));
+    componentFilesPathCache.add(filePathFormat(uri.fsPath));
   });
   return [];
 }
