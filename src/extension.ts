@@ -1,3 +1,6 @@
+import { parse } from '@babel/parser';
+import traverse from '@babel/traverse';
+import * as t from '@babel/types';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -16,6 +19,101 @@ import {
  * js 文件路径缓存
  */
 const componentFilesPathCache = new Set<string>();
+const fileTypes = ['.js', '.ts', '.jsx', '.tsx'];
+
+// 存储组件信息
+interface CustomElementInfo {
+  tag: string;
+  filePath: string;
+  className: string;
+  uri: vscode.Uri;
+  range: vscode.Range;
+}
+
+let customElementsDefines: CustomElementInfo[] = [];
+
+/**
+ * 改变组件缓存
+ * @param filePath 文件路径
+ * @param type 改变类型
+ */
+const changeCustomElementsDefines = (filePath: string, type: 'update' | 'remove') => {
+  filePath = filePathFormat(filePath);
+  customElementsDefines = customElementsDefines.filter((item) => item.filePath != filePath);
+  if (type == 'update') {
+    parseFile(filePath);
+  } else if (type == 'remove') {
+    componentFilesPathCache.delete(filePath);
+  }
+};
+
+// 1. 扫描文件解析 customElements.define
+function parseFile(filePath: string) {
+  const code = fs.readFileSync(filePath, 'utf8');
+  try {
+    const ast = parse(code, {
+      sourceType: 'unambiguous',
+      plugins: ['typescript', 'decorators-legacy'],
+    });
+
+    traverse(ast, {
+      CallExpression(path: any) {
+        const node = path.node;
+        // 匹配 customElements.define(...)
+        if (
+          t.isMemberExpression(node.callee) &&
+          t.isIdentifier(node.callee.object, { name: 'customElements' }) &&
+          t.isIdentifier(node.callee.property, { name: 'define' })
+        ) {
+          const [tagArg, classArg] = node.arguments;
+          componentFilesPathCache.add(filePathFormat(filePath));
+          // console.log('node.arguments', tagArg, classArg);
+
+          if (t.isStringLiteral(tagArg)) {
+            const tag = tagArg.value;
+            // const className = classArg.name;
+            const className = '';
+            const start = node.loc?.start;
+            const end = node.loc?.end;
+            if (start && end) {
+              customElementsDefines.push({
+                tag,
+                className,
+                filePath: filePathFormat(filePath),
+                uri: vscode.Uri.file(filePath),
+                range: new vscode.Range(
+                  new vscode.Position(start.line - 1, start.column),
+                  new vscode.Position(end.line - 1, end.column),
+                ),
+              });
+
+              // customElementsDefines.push();
+            }
+          }
+        }
+      },
+    });
+  } catch (e) {}
+}
+
+// 2. 扫描整个工作区
+async function scanWorkspace() {
+  customElementsDefines = [];
+  componentFilesPathCache.clear();
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  // console.log(workspaceFolders);
+  if (workspaceFolders) {
+    const files = await vscode.workspace.findFiles(
+      '**/*.{js,ts,jsx,tsx}',
+      '{**/node_modules/**,**/.git/**,**/dist/**}',
+    );
+    for (const file of files) {
+      parseFile(file.fsPath);
+    }
+  }
+
+  // console.log(customElementsDefines);
+}
 
 const filePathFormat = (filePath: string) => {
   // 1. 统一路径分隔符（兼容 Windows \ 和 Linux/Mac /）
@@ -27,7 +125,6 @@ const statusBarItemText = '$(code) web';
 
 // 激活插件时注册跳转提供者
 export function activate(context: vscode.ExtensionContext) {
-  getAllWorkspaceFiles();
   loadWorkspaceConfig().then((res) => {
     objectClear(componentsTags);
     Object.assign(componentsTags, res);
@@ -59,6 +156,8 @@ export function activate(context: vscode.ExtensionContext) {
   // ========== 3. 显示状态栏 ==========
   statusBarItem.show();
 
+  scanWorkspace();
+
   // 2. 注册状态栏点击事件
   const clickDisposable = vscode.commands.registerCommand('web-components-vscode.clickStatusBar', () => {
     // 弹出带命令的快速选择菜单
@@ -89,13 +188,12 @@ export function activate(context: vscode.ExtensionContext) {
     await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: '正在刷新数据缓存...' },
       async () => {
-        componentFilesPathCache.clear();
         await loadWorkspaceConfig().then((res) => {
           objectClear(componentsTags);
           Object.assign(componentsTags, res);
         });
         // 模拟刷新逻辑
-        await getAllWorkspaceFiles();
+        await scanWorkspace();
         statusBarItem.text = statusBarItemText;
       },
     );
@@ -113,8 +211,8 @@ export function activate(context: vscode.ExtensionContext) {
     }
     const fullPath = document.uri.fsPath;
     // 保存也更新下路劲
-    if (['.js'].includes(path.extname(fullPath))) {
-      componentFilesPathCache.add(filePathFormat(fullPath));
+    if (fileTypes.includes(path.extname(fullPath))) {
+      changeCustomElementsDefines(fullPath, 'update');
     }
   });
 
@@ -127,8 +225,8 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
       // 过滤需要关注的文件（如 html/vue 组件）
-      if (['.js'].includes(path.extname(filePath))) {
-        componentFilesPathCache.add(filePathFormat(filePath));
+      if (fileTypes.includes(path.extname(filePath))) {
+        changeCustomElementsDefines(filePath, 'update');
       }
     });
   });
@@ -141,8 +239,8 @@ export function activate(context: vscode.ExtensionContext) {
       if (isIgnoredPath(filePath)) {
         return;
       }
-      if (['.js'].includes(path.extname(filePath))) {
-        componentFilesPathCache.delete(filePathFormat(filePath));
+      if (fileTypes.includes(path.extname(filePath))) {
+        changeCustomElementsDefines(filePath, 'remove');
       }
     });
   });
@@ -158,9 +256,9 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       // 处理组件重命名
-      if (['.js'].includes(path.extname(oldPath)) || ['.js'].includes(path.extname(newPath))) {
-        componentFilesPathCache.delete(filePathFormat(oldPath));
-        componentFilesPathCache.add(filePathFormat(newPath));
+      if (fileTypes.includes(path.extname(oldPath)) || fileTypes.includes(path.extname(newPath))) {
+        changeCustomElementsDefines(oldPath, 'remove');
+        changeCustomElementsDefines(newPath, 'update');
       }
     });
   });
@@ -324,34 +422,6 @@ export function activate(context: vscode.ExtensionContext) {
   // console.log('web components vscode 插件已激活');
 }
 
-/**
- * 获取当前工作区的所有文件路径
- * @param include 包含的文件（glob 表达式，默认所有文件）
- * @param exclude 排除的文件（glob 表达式，默认忽略 node_modules/.git 等）
- * @returns 所有文件的 URI 路径数组
- */
-export async function getAllWorkspaceFiles(
-  /** 限定 ts,js */
-  include: string = '**/*.{ts,js}',
-  exclude: string = '{**/node_modules/**,**/.git/**,**/dist/**}',
-): Promise<string[]> {
-  // 1. 检查是否有打开的工作区
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) {
-    // vscode.window.showWarningMessage('未打开任何工作区！');
-    return [];
-  }
-
-  // 2. 查找工作区文件（glob 匹配）
-  const fileUris = await vscode.workspace.findFiles(include, exclude, undefined);
-
-  fileUris.forEach((uri) => {
-    // 更新缓存
-    componentFilesPathCache.add(filePathFormat(uri.fsPath));
-  });
-  return [];
-}
-
 // 定义跳转提供者类
 class HtmlTagDefinitionProvider implements vscode.DefinitionProvider {
   // 核心方法：处理跳转请求
@@ -366,33 +436,18 @@ class HtmlTagDefinitionProvider implements vscode.DefinitionProvider {
       if (!tagName) {
         return undefined;
       }
-
-      // 2. 定位标签对应的文件（示例：跳转到同目录下的 [标签名].html）
-      // 可根据业务逻辑修改（如组件库、模板路径等）
-      const targetPath = this.getTargetFilePath(tagName);
-      if (!targetPath || !fs.existsSync(targetPath)) {
-        // vscode.window.showWarningMessage(`未找到 ${tagName} 对应的文件`);
-        return undefined;
-      }
-
-      // 3. 构建跳转目标位置（默认跳转到文件第一行第一列）
-      const targetUri = vscode.Uri.file(targetPath);
-      const targetRange = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
-
-      return [new vscode.Location(targetUri, targetRange)];
+      // console.log(customElementsDefines);
+      const el = customElementsDefines
+        .filter((e) => e.tag === tagName)
+        .map((el) => {
+          return new vscode.Location(el.uri, el.range);
+        });
+      // console.log(el);
+      return el.length ? el : undefined;
     } catch (error) {
       // console.error("HTML 标签跳转失败:", error);
       return undefined;
     }
-  }
-
-  // 自定义：根据标签名定位目标文件
-  getTargetFilePath(tagName: string): string | null {
-    const targetFile =
-      // ! 匹配规则：文件路径以 标签名.js 或 标签名/index.js 结尾
-      [...componentFilesPathCache].find((el) => el.endsWith(`/${tagName}.js`) || el.endsWith(`/${tagName}/index.js`)) ||
-      null;
-    return targetFile;
   }
 }
 

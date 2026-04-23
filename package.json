@@ -2,7 +2,7 @@
   "name": "web-components-vscode",
   "displayName": "web components vscode",
   "description": "自定义组件跳转, 组件属性补全, web components 部分语法",
-  "version": "0.1.5",
+  "version": "0.2.1",
   "icon": "images/icon.png",
   "publisher": "ZhengWei513",
   "author": {
@@ -64,5 +64,10 @@
     "npm-run-all": "^4.1.5",
     "typescript": "^5.9.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
+    "@types/babel__traverse": "^7.28.0"
+  }
 }

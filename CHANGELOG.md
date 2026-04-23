@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.2.1]
+
+- 使用 @babel/parser 和 @babel/traverse 更精准地匹配标签
+
 ## [0.1.5]
 
 - 统一路径分隔符（兼容 Windows \ 和 Linux/Mac /）
