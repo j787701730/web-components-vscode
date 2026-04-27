@@ -1,0 +1,20 @@
+{
+  "tags": [
+    {
+      "name": "script",
+      "description": "JavaScript 脚本标签",
+      "attributes": [
+        {
+          "name": "blocking",
+          "description": "阻塞渲染 (Chrome 105+, ios 18.2+)",
+          "values": [{ "name": "render", "description": "阻塞渲染" }]
+        },
+        {
+          "name": "type",
+          "description": "脚本类型",
+          "values": [{ "name": "module", "description": "ES 模块" }]
+        }
+      ]
+    }
+  ]
+}
