@@ -47,9 +47,67 @@ const changeCustomElementsDefines = (filePath: string, type: 'update' | 'remove'
   }
 };
 
+/**
+ * 高性能判断 JS 是否被压缩（minified）
+ * 不读取整个文件，只读取头部，速度极快
+ */
+export function isMinifiedJS(filePath: string): boolean {
+  // 1. 快速文件名判断（最快）
+  const base = filePath.toLowerCase();
+  if (base.includes('.min.js') || base.includes('.prod.js') || base.includes('.bundle.js')) {
+    return true;
+  }
+
+  // 只读取前 10KB 判断，性能拉满
+  const buffer = Buffer.alloc(1024 * 10);
+  let fd;
+  try {
+    fd = fs.openSync(filePath, 'r');
+    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    const content = buffer.toString('utf8', 0, bytesRead);
+
+    // 2. 单行超长 → 压缩文件
+    const lines = content.split('\n');
+    for (const line of lines) {
+      if (line.length > 800) {
+        // 单行>800字符 = 压缩JS
+        return true;
+      }
+    }
+
+    // 3. 无空格/无缩进特征
+    const hasLittleWhitespace = (content.match(/\s/g) || []).length / content.length < 0.05;
+    if (hasLittleWhitespace) {
+      return true;
+    }
+
+    // 4. 大量短变量 a,b,c,aa,ab 特征
+    const shortVarRegex = /(var|let|const)\s+([a-z_][a-z0-9_]{0,2})\b/gi;
+    const matches = content.match(shortVarRegex) || [];
+    if (matches.length > 5) {
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  } finally {
+    if (fd) fs.closeSync(fd);
+  }
+}
+// let count = 0;
 // 1. 扫描文件解析 customElements.define
 function parseFile(filePath: string) {
+  if (isMinifiedJS(filePath)) {
+    return;
+  }
+
   const code = fs.readFileSync(filePath, 'utf8');
+  // 2. 匹配 customElements
+  if (!code.includes('customElements')) {
+    return;
+  }
+  // console.log(count++);
   try {
     const ast = parse(code, {
       sourceType: 'unambiguous',

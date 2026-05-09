@@ -140,5 +140,17 @@
     "prefix": "js-assignedNodes-empty",
     "body": ["$1.assignedNodes({ flatten: true }).length === 0"],
     "description": "判断 slot 是否为空"
+  },
+  "JSDoc Typedef 定义": {
+    "prefix": "jsdoc-typedef",
+    "body": [
+      "/**",
+      " * ${1}",
+      " * @typedef {Object} ${2:TypeName}",
+      " * @property {string} ${3:prop1}",
+      " * @property {number} ${4:prop2}",
+      " */"
+    ],
+    "description": "JSDoc Typedef 定义"
   }
 }

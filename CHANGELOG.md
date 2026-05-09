@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.2.4]
+
+- 添加 判断文件中 存在 'customElements'
+
+## [0.2.3]
+
+- 添加 判断 JS,ts 是否被压缩（minified）减少文件解析
+
 ## [0.2.2]
 
 - 添加 html.customData 配置, script 支持 blocking="render" 属性提示
