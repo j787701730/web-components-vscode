@@ -47,6 +47,12 @@ const changeCustomElementsDefines = (filePath: string, type: 'update' | 'remove'
   }
 };
 
+const zwDebug = (filePath: string) => {
+  if (filePath.includes('detail_render.js')) {
+    console.log(filePath);
+  }
+};
+
 /**
  * 高性能判断 JS 是否被压缩（minified）
  * 不读取整个文件，只读取头部，速度极快
@@ -84,10 +90,10 @@ export function isMinifiedJS(filePath: string): boolean {
     // 4. 大量短变量 a,b,c,aa,ab 特征
     const shortVarRegex = /(var|let|const)\s+([a-z_][a-z0-9_]{0,2})\b/gi;
     const matches = content.match(shortVarRegex) || [];
-    if (matches.length > 5) {
+    if (matches.length > 100) {
       return true;
     }
-
+    // zwDebug(filePath);
     return false;
   } catch {
     return false;
